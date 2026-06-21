@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: resumeai_postgres
+    environment:
+      POSTGRES_DB: resumeai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - resumeai_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d resumeai"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: resumeai_dbeaver
+    ports:
+      - "8978:8978"
+    volumes:
+      - resumeai_cloudbeaver_data:/opt/cloudbeaver/workspace
+    depends_on:
+      - postgres
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: resumeai_backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/resumeai
+      JWT_SECRET: super-secret
+      OPENAI_API_KEY: ""
+      STRIPE_SECRET_KEY: ""
+      STRIPE_WEBHOOK_SECRET: ""
+      FRONTEND_URL: http://localhost:3001
+      ADMIN_EMAIL: admin@resumeai.local
+      ADMIN_PASSWORD: ResumeAI-Admin-2026
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api
+        NEXT_PUBLIC_PAYMENT_NUMBER: "01551806306"
+    container_name: resumeai_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      NEXT_PUBLIC_PAYMENT_NUMBER: "01551806306"
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    depends_on:
+      - backend
+
+volumes:
+  resumeai_pg_data:
+  resumeai_cloudbeaver_data:

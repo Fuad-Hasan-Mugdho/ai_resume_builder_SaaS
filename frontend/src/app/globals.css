@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f8fbff;
+  --fg: #0f172a;
+}
+
+body {
+  background: radial-gradient(circle at top left, #dbeafe, #f8fbff 45%);
+  color: var(--fg);
+}
+
+.dark body { background: #0f172a; color: #e2e8f0; }
+.dark header { background: rgb(15 23 42 / 92%); border-color: #334155; }
+.dark .bg-white { background-color: #1e293b; }
+.dark input, .dark textarea, .dark select { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+.dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
+
+.wizard-form > * { display: none; }
+.wizard-form .wizard-controls { display: flex; }
+.wizard-step-0 > :nth-child(1), .wizard-step-0 > :nth-child(2), .wizard-step-0 > :nth-child(13),
+.wizard-step-1 > :nth-child(3), .wizard-step-1 > :nth-child(4),
+.wizard-step-2 > :nth-child(5), .wizard-step-2 > :nth-child(6),
+.wizard-step-3 > :nth-child(7), .wizard-step-3 > :nth-child(8), .wizard-step-3 > :nth-child(9),
+.wizard-step-4 > :nth-child(10), .wizard-step-4 > :nth-child(11),
+.wizard-form > :nth-child(12) { display: block; }
+
+.template-modern {
+  border-top: 12px solid var(--fg);
+}
+
+.template-creative {
+  background: linear-gradient(135deg, #ffffff 72%, #eff6ff);
+}
+
+.watermark {
+  position: absolute;
+  inset: 45% auto auto 12%;
+  z-index: 10;
+  transform: rotate(-28deg);
+  color: rgb(148 163 184 / 18%);
+  font-size: 72px;
+  font-weight: 800;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body {
+    width: 210mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+  body > header, .no-print { display: none !important; }
+  main {
+    display: block !important;
+    width: 210mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .resume-workspace {
+    display: block !important;
+    width: 210mm !important;
+    margin: 0 !important;
+  }
+  .resume-preview {
+    box-sizing: border-box !important;
+    display: flex !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 12mm !important;
+    box-shadow: none !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .resume-preview header,
+  .resume-preview section { break-inside: avoid; page-break-inside: avoid; }
+}
