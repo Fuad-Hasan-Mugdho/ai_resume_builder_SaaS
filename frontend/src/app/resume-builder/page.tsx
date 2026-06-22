@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button, Card, Input, Textarea } from '@/components/ui';
 import { Education, emptyResume, Experience, Project, ResumeData } from '@/types/resume';
@@ -21,6 +22,7 @@ function authHeaders() {
 
 export default function ResumeBuilderPage() {
   const authReady = useRequireAuth();
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('My Professional Resume');
   const [data, setData] = useState<ResumeData>(emptyResume);
@@ -28,6 +30,8 @@ export default function ResumeBuilderPage() {
   const [templates, setTemplates] = useState<ResumeTemplate[]>([]);
   const [currentId, setCurrentId] = useState<string>();
   const [paidResumeIds, setPaidResumeIds] = useState<string[]>([]);
+  const [resumeAccessReady, setResumeAccessReady] = useState(false);
+  const [paymentRedirecting, setPaymentRedirecting] = useState(false);
   const [exportAuthorized, setExportAuthorized] = useState(false);
   const [message, setMessage] = useState('');
   const t = labels[data.language];
@@ -44,6 +48,7 @@ export default function ResumeBuilderPage() {
     setPaidResumeIds(paymentResult.data
       .filter((payment: ResumePayment) => payment.resumeId && payment.status === 'APPROVED' && payment.accessExpiresAt && new Date(payment.accessExpiresAt) > new Date())
       .map((payment: ResumePayment) => payment.resumeId as string));
+    setResumeAccessReady(true);
     setTemplates(templateResult.data);
     const requestedId = new URLSearchParams(window.location.search).get('resumeId');
     const requestedResume = resumeResult.data.find((resume: StoredResume) => resume.id === requestedId);
@@ -105,6 +110,24 @@ export default function ResumeBuilderPage() {
       setMessage('Create or load a saved resume before exporting.');
       return;
     }
+
+    let hasActiveAccess = paidResumeIds.includes(currentId);
+    if (!hasActiveAccess) {
+      const paymentResult = await api.get('/payments/manual/status', { headers: authHeaders() });
+      const activeIds = paymentResult.data
+        .filter((payment: ResumePayment) => payment.resumeId && payment.status === 'APPROVED' && payment.accessExpiresAt && new Date(payment.accessExpiresAt) > new Date())
+        .map((payment: ResumePayment) => payment.resumeId as string);
+      setPaidResumeIds(activeIds);
+      hasActiveAccess = activeIds.includes(currentId);
+    }
+
+    if (!hasActiveAccess) {
+      setPaymentRedirecting(true);
+      setMessage('Payment is required for this CV. Opening the payment page...');
+      window.setTimeout(() => router.push(`/pricing?resumeId=${encodeURIComponent(currentId)}`), 1200);
+      return;
+    }
+
     await api.post(`/resumes/${currentId}/export-authorize`, {}, { headers: authHeaders() });
     setExportAuthorized(true);
     setMessage('PDF download authorized. You can download this CV throughout the 7-day access period.');
@@ -143,8 +166,10 @@ export default function ResumeBuilderPage() {
     <div className="space-y-5">
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-3xl font-bold">Create Your CV</h1><p className="text-sm text-slate-600">Complete one easy step at a time.</p></div>
-        <Button onClick={exportPdf}>Download PDF</Button>
+        <Button disabled={!resumeAccessReady || paymentRedirecting} onClick={exportPdf}>{paymentRedirecting ? 'Opening Payment...' : !resumeAccessReady ? 'Checking Access...' : 'Download PDF'}</Button>
       </div>
+
+      {paymentRedirecting && <div className="no-print rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><b>Payment required for this CV.</b> Taking you to the ৳20 payment page...</div>}
 
       <div className="no-print grid grid-cols-5 overflow-hidden rounded-xl border bg-white text-center text-xs">
         {steps.map((label, index) => <button key={label} type="button" className={`p-2 ${step === index ? 'bg-brand font-bold text-white' : ''}`} onClick={() => setStep(index)}><span className="block">{index + 1}</span><span className="hidden sm:block">{label}</span></button>)}

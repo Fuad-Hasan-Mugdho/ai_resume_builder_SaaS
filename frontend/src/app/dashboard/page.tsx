@@ -46,6 +46,13 @@ export default function DashboardPage() {
 
   if (!authReady || !data) return <p>Loading dashboard...</p>;
 
+  const activeDownloads = payments.filter((payment) =>
+    payment.status === 'APPROVED' &&
+    payment.accessExpiresAt &&
+    new Date(payment.accessExpiresAt) > new Date(),
+  ).length;
+  const pendingPayments = payments.filter((payment) => payment.status === 'PENDING').length;
+
   return (
     <div className="space-y-5">
       <div><h1 className="text-3xl font-bold">Welcome, {data.userName}</h1><p className="text-slate-600">Here is your CV account overview.</p></div>
@@ -53,8 +60,8 @@ export default function DashboardPage() {
         <Link href="#saved-resumes" aria-label="View saved resumes">
           <Card className="h-full cursor-pointer transition hover:border-brand hover:shadow-md"><h3 className="font-semibold">Total Resumes</h3><p className="text-3xl">{data.totalResumes}</p><p className="mt-2 text-sm font-medium text-brand">View saved CVs</p></Card>
         </Link>
-        <Card><h3 className="font-semibold">Average ATS</h3><p className="text-3xl">{Math.round(data.atsScoreAverage)}</p></Card>
-        <Card><h3 className="font-semibold">Plan</h3><p className="text-3xl">{data.subscriptionStatus}</p></Card>
+        <Card><h3 className="font-semibold">Download Active</h3><p className="text-3xl">{activeDownloads}</p><p className="mt-2 text-sm text-slate-500">Approved CVs within 7 days</p></Card>
+        <Card><h3 className="font-semibold">Pending Payments</h3><p className="text-3xl">{pendingPayments}</p><p className="mt-2 text-sm text-slate-500">Waiting for admin approval</p></Card>
       </div>
 
       <Card id="saved-resumes" className="scroll-mt-24">
